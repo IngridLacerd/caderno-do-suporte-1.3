@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caderno do Suporte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-left">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="ti ti-notebook"></i></div>
+        <div>
+          <span class="login-app-name">Caderno do Suporte</span>
+          <small>Entre com seu perfil e senha para continuar</small>
+        </div>
+      </div>
+      <div class="login-illustration"><i class="ti ti-notebook"></i></div>
+      <div class="login-desc">Acesse seus procedimentos e anotações de suporte sincronizados no servidor. Crie perfis com email e senha para manter seus dados persistentes.</div>
+    </div>
+    <div class="login-right">
+      <div class="login-section-label">Entrar com email</div>
+      <div class="login-form-email">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email-input" placeholder="seu@exemplo.com" />
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="login-email-pass" placeholder="Senha" onkeydown="if(event.key==='Enter') loginByEmail()" />
+        </div>
+        <div class="login-actions">
+          <button class="btn-new" onclick="loginByEmail()">Entrar com email</button>
+        </div>
+      </div>
+
+      <div class="login-divider">ou escolha um perfil</div>
+
+      <div class="login-user-grid" id="login-user-grid"></div>
+      <div class="login-actions" style="margin-top:16px;">
+        <button class="btn-new" onclick="openCreateUserModal()"><i class="ti ti-plus"></i> Novo perfil</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="create-user-modal" style="display:none" onclick="if(event.target===this)closeCreateUserModal()">
+  <div class="modal create-user-modal">
+    <div class="modal-header">
+      <h3>Criar novo perfil</h3>
+      <button class="icon-btn" onclick="closeCreateUserModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="create-user-grid">
+      <div class="create-user-side">
+        <div class="create-user-avatar-preview" id="new-user-avatar-preview"><i class="ti ti-user-circle"></i></div>
+        <div style="margin-top:10px">Escolha um ícone e cor</div>
+        <div class="avatar-pick-row" id="avatar-pick-row">
+          <button class="avatar-pick-btn selected" data-icon="ti-user-circle" onclick="selectAvatar(this)"><i class="ti ti-user-circle"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user" onclick="selectAvatar(this)"><i class="ti ti-user"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-star" onclick="selectAvatar(this)"><i class="ti ti-user-star"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-bolt" onclick="selectAvatar(this)"><i class="ti ti-user-bolt"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-heart" onclick="selectAvatar(this)"><i class="ti ti-user-heart"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-shield" onclick="selectAvatar(this)"><i class="ti ti-user-shield"></i></button>
+        </div>
+        <div style="margin-top:10px">
+          <label style="display:block;font-size:13px;color:var(--text-2);margin-bottom:6px">Cor do perfil</label>
+          <input type="color" id="user-color-pick" value="#880000" />
+        </div>
+      </div>
+      <div class="create-user-form">
+        <div class="form-group">
+          <label>Nome do perfil</label>
+          <input type="text" id="new-user-name" placeholder="Ex: João, Suporte 1..." onkeydown="if(event.key==='Enter')createUser()" />
+        </div>
+        <div class="form-row">
+              <div class="form-group">
+                <label>Senha <span style="color:var(--danger);">*</span></label>
+                <input type="password" id="new-user-password" placeholder="Mínimo 6 caracteres" minlength="6" required onkeydown="if(event.key==='Enter')createUser()" />
+              </div>
+          <div class="form-group">
+            <label>Confirmar senha</label>
+            <input type="password" id="new-user-password-confirm" placeholder="Repita a senha" onkeydown="if(event.key==='Enter')createUser()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email <span style="color:var(--danger);">*</span></label>
+          <input type="email" id="new-user-email" placeholder="seu@exemplo.com" required onkeydown="if(event.key==='Enter')createUser()" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeCreateUserModal()">Cancelar</button>
+          <button class="btn-save" onclick="createUser()">Criar perfil</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="app-root" style="display:none">
+
+<div class="overlay-bg" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="ti ti-notebook"></i></div>
+      <div>
+        <span>Caderno de Suporte</span>
+        <small>Procedimentos técnicos</small>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Visão geral</div>
+      <div class="cat-item" onclick="setView('dashboard')" id="view-dashboard">
+        <i class="ti ti-layout-dashboard cat-icon"></i>
+        <span>Painel</span>
+      </div>
+      <div class="cat-item" onclick="setView('favorites')" id="view-favorites">
+        <i class="ti ti-star cat-icon"></i>
+        <span>Favoritos</span>
+        <span class="cat-count" id="fav-count">0</span>
+      </div>
+      <div class="cat-item" onclick="setView('history')" id="view-history">
+        <i class="ti ti-history cat-icon"></i>
+        <span>Histórico</span>
+      </div>
+      <div class="cat-item" onclick="setView('notes')" id="view-notes">
+        <i class="ti ti-pencil cat-icon"></i>
+        <span>Anotações</span>
+        <span class="cat-count" id="notes-count">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Categorias</div>
+      <div id="cat-list"></div>
+      <button class="add-cat-btn" onclick="openCatModal()">
+        <i class="ti ti-plus" style="font-size:14px"></i> Gerenciar categorias
+      </button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-stat" id="total-stat"></div>
+      <div class="sidebar-user-area">
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-avatar" id="sidebar-user-avatar"><i class="ti ti-user"></i></div>
+          <span class="sidebar-user-name" id="sidebar-user-name">—</span>
+        </div>
+        <button class="icon-btn" onclick="logout()" title="Sair / trocar perfil"><i class="ti ti-logout"></i></button>
+      </div>
+      <div class="sidebar-profile-card">
+        <div class="sidebar-profile-label">Meu perfil</div>
+        <button class="btn-new btn-small" onclick="openPasswordModal()">Trocar senha</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+      <div class="topbar-title" id="topbar-title">Painel</div>
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input type="text" id="search" placeholder="Buscar procedimento ou passo..." oninput="onSearchInput()" />
+      </div>
+      <select id="status-filter" onchange="render()" title="Filtrar por status">
+        <option value="">Todos os status</option>
+        <option value="pendente">A fazer</option>
+        <option value="andamento">Em andamento</option>
+        <option value="resolvido">Resolvido</option>
+      </select>
+      <button class="icon-btn theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="Alternar tema">
+        <i class="ti ti-moon" id="theme-icon"></i>
+      </button>
+      <button class="icon-btn alerts-btn" onclick="openAlertsModal()" title="Avisos e demandas pendentes">
+        <i class="ti ti-bell"></i>
+        <span class="alerts-badge" id="alerts-badge" style="display:none">0</span>
+      </button>
+      <button class="btn-new" onclick="openModal()">
+        <i class="ti ti-plus"></i> Novo
+      </button>
+    </header>
+
+    <div class="content">
+      <div class="content-header">
+        <h2 id="content-title">Painel</h2>
+        <small id="content-count"></small>
+      </div>
+
+      <div id="dashboard-view">
+        <div class="profile-panel-card" id="profile-panel-card" style="display:none">
+          <div class="profile-panel-info">
+            <div class="profile-panel-avatar" id="profile-panel-avatar"><i class="ti ti-user"></i></div>
+            <div>
+              <div class="profile-panel-label">Perfil ativo</div>
+              <div class="profile-panel-name" id="profile-panel-name">—</div>
+            </div>
+          </div>
+          <button class="btn-new btn-small" onclick="openPasswordModal()">Trocar senha</button>
+        </div>
+        <div class="dashboard-alert-banner" id="dashboard-alert-banner" style="display:none" onclick="openAlertsModal()">
+          <i class="ti ti-alert-triangle"></i>
+          <span class="dab-count"></span>
+          <span class="dab-link">Ver avisos →</span>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Total de procedimentos</span>
+            <span class="metric-value" id="m-total">0</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Resolvidos</span>
+            <span class="metric-value" id="m-resolvido">0</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Em andamento</span>
+            <span class="metric-value" id="m-andamento">0</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">A fazer</span>
+            <span class="metric-value" id="m-pendente">0</span>
+          </div>
+        </div>
+
+        <div class="dashboard-cols">
+          <div class="dashboard-col">
+            <h3 class="section-title"><i class="ti ti-clock"></i> Acessados recentemente</h3>
+            <div id="recent-list" class="mini-list"></div>
+          </div>
+          <div class="dashboard-col">
+            <h3 class="section-title"><i class="ti ti-star"></i> Favoritos</h3>
+            <div id="fav-list" class="mini-list"></div>
+          </div>
+        </div>
+
+        <h3 class="section-title" style="margin-top:1.5rem"><i class="ti ti-folders"></i> Por categoria</h3>
+        <div class="cards-grid" id="cat-overview-grid"></div>
+      </div>
+
+      <div id="history-view" style="display:none">
+        <div class="history-toolbar">
+          <button class="btn-cancel" onclick="clearHistory()"><i class="ti ti-trash" style="font-size:14px"></i> Limpar histórico</button>
+        </div>
+        <div id="history-list" class="mini-list"></div>
+      </div>
+
+      <div id="notes-view" style="display:none">
+        <div class="notes-layout">
+          <div class="notes-sidebar">
+            <button class="notes-new-btn" onclick="createNote()">
+              <i class="ti ti-plus"></i> Nova anotação
+            </button>
+            <div id="notes-list-sidebar" class="notes-list-sidebar"></div>
+          </div>
+          <div class="notes-editor-area" id="notes-editor-area">
+            <div class="notes-empty-state" id="notes-empty-state">
+              <i class="ti ti-pencil-off" style="font-size:40px;color:var(--text-3)"></i>
+              <p>Selecione uma anotação ou crie uma nova</p>
+              <button class="btn-new" onclick="createNote()"><i class="ti ti-plus"></i> Nova anotação</button>
+            </div>
+            <div id="notes-editor" style="display:none">
+              <div class="notes-editor-topbar">
+                <input type="text" id="note-title-input" class="note-title-input" placeholder="Título da anotação..." oninput="autoSaveNote()" />
+                <div class="notes-editor-actions">
+                  <button class="icon-btn" onclick="toggleNotePin()" id="note-pin-btn" title="Fixar"><i class="ti ti-pin"></i></button>
+                  <button class="icon-btn" onclick="deleteCurrentNote()" title="Excluir"><i class="ti ti-trash"></i></button>
+                </div>
+              </div>
+              <div class="note-meta" id="note-meta"></div>
+              <div class="note-toolbar">
+                <button class="note-tb-btn" onclick="insertBlock('h1')" title="Título grande"><i class="ti ti-heading"></i> H1</button>
+                <button class="note-tb-btn" onclick="insertBlock('h2')" title="Título médio"><i class="ti ti-heading"></i> H2</button>
+                <button class="note-tb-btn" onclick="insertBlock('h3')" title="Subtítulo"><i class="ti ti-heading"></i> H3</button>
+                <div class="note-tb-sep"></div>
+                <button class="note-tb-btn" onclick="insertBlock('p')" title="Parágrafo"><i class="ti ti-align-left"></i></button>
+                <button class="note-tb-btn" onclick="insertBlock('ul')" title="Lista"><i class="ti ti-list"></i></button>
+                <button class="note-tb-btn" onclick="insertBlock('ol')" title="Lista numerada"><i class="ti ti-list-numbers"></i></button>
+                <button class="note-tb-btn" onclick="insertBlock('check')" title="Checklist"><i class="ti ti-checkbox"></i></button>
+                <div class="note-tb-sep"></div>
+                <button class="note-tb-btn" onclick="insertBlock('quote')" title="Citação"><i class="ti ti-quote"></i></button>
+                <button class="note-tb-btn" onclick="insertBlock('code')" title="Código"><i class="ti ti-code"></i></button>
+                <button class="note-tb-btn" onclick="insertBlock('hr')" title="Divisor"><i class="ti ti-minus"></i></button>
+              </div>
+              <div id="note-blocks" class="note-blocks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cards-grid" id="cards-grid" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="change-password-modal" style="display:none" onclick="if(event.target===this)closePasswordModal()">
+  <div class="modal change-password-modal">
+    <div class="modal-header">
+      <h3>Trocar senha</h3>
+      <button class="icon-btn" onclick="closePasswordModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label>Nova senha</label>
+      <input type="password" id="new-password" placeholder="Digite a nova senha" />
+    </div>
+    <div class="form-group">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="new-password-confirm" placeholder="Repita a nova senha" onkeydown="if(event.key==='Enter')changePassword()" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closePasswordModal()">Cancelar</button>
+      <button class="btn-save" onclick="changePassword()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="proc-modal" style="display:none" onclick="checkOverlayClose(event,'proc-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Novo procedimento</h3>
+      <button class="icon-btn" onclick="closeModal('proc-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label>Título</label>
+      <input type="text" id="f-title" placeholder="Ex: Instalar driver de impressora" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="f-cat"></select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="pendente">A fazer</option>
+          <option value="andamento">Em andamento</option>
+          <option value="resolvido">Resolvido</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Passos do procedimento</label>
+      <div class="steps-editor" id="steps-editor"></div>
+      <button class="add-step-btn" onclick="addStep()">
+        <i class="ti ti-plus" style="font-size:14px"></i> Adicionar passo
+      </button>
+    </div>
+    <div class="form-group">
+      <label>Observações <span class="optional-tag">(opcional)</span></label>
+      <textarea id="f-obs" placeholder="Dicas, atenção especial, links úteis..."></textarea>
+    </div>
+    <div class="form-group">
+      <label><i class="ti ti-user" style="font-size:14px;vertical-align:-2px"></i> Contato do cliente <span class="optional-tag">(opcional)</span></label>
+      <div class="form-row">
+        <input type="text" id="f-client-name" placeholder="Nome / loja" />
+        <input type="text" id="f-client-phone" placeholder="Telefone" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('proc-modal')">Cancelar</button>
+      <button class="btn-save" onclick="saveProcForm()">Salvar procedimento</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cat-modal" style="display:none" onclick="checkOverlayClose(event,'cat-modal')">
+  <div class="modal cat-modal">
+    <div class="modal-header">
+      <h3>Gerenciar categorias</h3>
+      <button class="icon-btn" onclick="closeModal('cat-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="cat-input-row">
+      <input type="text" id="new-cat-input" placeholder="Nome da nova categoria" onkeydown="if(event.key==='Enter')addCat()" />
+      <button class="btn-add-cat" onclick="addCat()">Adicionar</button>
+    </div>
+    <div class="cat-manage-list" id="cat-manage-list"></div>
+    <div class="modal-footer">
+      <button class="btn-save" onclick="closeModal('cat-modal')">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="view-modal" style="display:none" onclick="checkOverlayClose(event,'view-modal')">
+  <div class="modal view-modal" id="view-modal-content"></div>
+</div>
+
+<div class="modal-overlay" id="alerts-modal" style="display:none" onclick="if(event.target===this)closeAlertsModal()">
+  <div class="modal alerts-modal">
+    <div class="modal-header">
+      <h3><i class="ti ti-bell" style="margin-right:6px;color:var(--accent)"></i> Avisos e demandas pendentes</h3>
+      <button class="icon-btn" onclick="closeAlertsModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="alert-new-row">
+      <input type="text" id="alert-new-input" placeholder="Descreva o aviso ou demanda pendente..." onkeydown="if(event.key==='Enter')addAlert()" />
+      <input type="date" id="alert-new-date" class="alert-date-inp" />
+      <button class="btn-save alert-add-btn" onclick="addAlert()"><i class="ti ti-plus"></i> Adicionar</button>
+    </div>
+    <div id="alerts-list" class="alerts-list"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAlertsModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./script.js"></script>
+</body>
+</html>
