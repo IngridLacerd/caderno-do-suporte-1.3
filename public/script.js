@@ -888,6 +888,12 @@ function openSidebar() {
   if (ov) ov.classList.add('visible');
 }
 
+function toggleSidebar() {
+  var sb = document.querySelector('.sidebar');
+  if (sb && sb.classList.contains('open')) closeSidebar();
+  else openSidebar();
+}
+
 function closeSidebar() {
   var sb = document.querySelector('.sidebar');
   var ov = document.querySelector('.overlay-bg');
