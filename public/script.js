@@ -380,18 +380,19 @@ function renderProcCard(p) {
 function renderDashboard() {
   updateAlertBadge();
 
-  var metricsEl = document.getElementById('metrics');
-  if (metricsEl) {
-    var total    = procs.length;
-    var resolved = procs.filter(function(p) { return p.status === 'resolvido'; }).length;
-    var pending  = procs.filter(function(p) { return p.status === 'pendente'; }).length;
-    var favs     = getFavorites().length;
-    metricsEl.innerHTML =
-      '<div class="metric-card"><div class="metric-value">' + total    + '</div><div class="metric-label">Total</div></div>'
-    + '<div class="metric-card"><div class="metric-value">' + resolved + '</div><div class="metric-label">Resolvidos</div></div>'
-    + '<div class="metric-card"><div class="metric-value">' + pending  + '</div><div class="metric-label">A fazer</div></div>'
-    + '<div class="metric-card"><div class="metric-value">' + favs     + '</div><div class="metric-label">Favoritos</div></div>';
-  }
+  var total    = procs.length;
+  var resolved = procs.filter(function(p) { return p.status === 'resolvido'; }).length;
+  var andamento = procs.filter(function(p) { return p.status === 'andamento'; }).length;
+  var pending  = procs.filter(function(p) { return p.status === 'pendente'; }).length;
+
+  var mTotal = document.getElementById('m-total');
+  if (mTotal) mTotal.textContent = total;
+  var mResolvido = document.getElementById('m-resolvido');
+  if (mResolvido) mResolvido.textContent = resolved;
+  var mAndamento = document.getElementById('m-andamento');
+  if (mAndamento) mAndamento.textContent = andamento;
+  var mPendente = document.getElementById('m-pendente');
+  if (mPendente) mPendente.textContent = pending;
 
   var catGridEl = document.getElementById('cat-overview-grid');
   if (catGridEl) {
@@ -408,29 +409,11 @@ function renderDashboard() {
     catGridEl.innerHTML = html;
   }
 
-  var recentEl = document.getElementById('recent-procs-list');
+  var recentEl = document.getElementById('recent-list');
   if (recentEl) {
-    var recent = procs.slice(0, 5);
-    if (!recent.length) {
-      recentEl.innerHTML = '<div class="mini-empty">Nenhum procedimento cadastrado.</div>';
-    } else {
-      var rhtml = '';
-      for (var j = 0; j < recent.length; j++) {
-        var p = recent[j];
-        rhtml += '<div class="mini-item" onclick="viewProc(' + p.id + ')">'
-          + '<i class="ti ' + (getCatMeta(p.cat).icon) + '" style="color:var(--text-3)"></i>'
-          + '<span>' + esc(p.title) + '</span>'
-          + '</div>';
-      }
-      recentEl.innerHTML = rhtml;
-    }
-  }
-
-  var histEl = document.getElementById('recent-history-list');
-  if (histEl) {
     var recent2 = accessHistory.slice(0, 5);
     if (!recent2.length) {
-      histEl.innerHTML = '<div class="mini-empty">Nenhum acesso registrado.</div>';
+      recentEl.innerHTML = '<div class="mini-empty">Nenhum acesso registrado.</div>';
     } else {
       var hhtml = '';
       for (var k = 0; k < recent2.length; k++) {
@@ -441,7 +424,25 @@ function renderDashboard() {
           + '<span class="mini-time">' + formatRelativeTime(h.timestamp) + '</span>'
           + '</div>';
       }
-      histEl.innerHTML = hhtml;
+      recentEl.innerHTML = hhtml;
+    }
+  }
+
+  var favEl = document.getElementById('fav-list');
+  if (favEl) {
+    var favs = getFavorites();
+    if (!favs.length) {
+      favEl.innerHTML = '<div class="mini-empty">Nenhum favorito ainda.</div>';
+    } else {
+      var fhtml = '';
+      for (var m = 0; m < favs.length; m++) {
+        var f = favs[m];
+        fhtml += '<div class="mini-item" onclick="viewProc(' + f.id + ')">'
+          + '<i class="ti ' + (getCatMeta(f.cat).icon) + '" style="color:var(--text-3)"></i>'
+          + '<span>' + esc(f.title) + '</span>'
+          + '</div>';
+      }
+      favEl.innerHTML = fhtml;
     }
   }
 }
