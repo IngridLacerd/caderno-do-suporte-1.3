@@ -409,7 +409,28 @@
 </div>
 
 <div class="modal-overlay" id="view-modal" style="display:none" onclick="checkOverlayClose(event,'view-modal')">
-  <div class="modal view-modal" id="view-modal-content"></div>
+  <div class="modal view-modal">
+    <div class="view-header">
+      <div class="view-title" id="view-title"></div>
+      <div class="view-actions">
+        <button class="icon-btn" id="view-fav-btn" onclick="viewToggleFavFromModal()" title="Favoritar"><i class="ti ti-star"></i></button>
+        <button class="icon-btn" id="view-edit-btn" onclick="viewEditFromModal()" title="Editar"><i class="ti ti-pencil"></i></button>
+        <button class="icon-btn" id="view-del-btn" onclick="viewDeleteFromModal()" title="Excluir"><i class="ti ti-trash"></i></button>
+        <button class="icon-btn" onclick="closeModal('view-modal')" title="Fechar"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <div class="view-badges" id="view-meta"></div>
+    <div class="view-steps" id="view-steps"></div>
+    <div class="obs-box" id="view-obs" style="display:none">
+      <strong>Observações</strong>
+      <div class="view-obs-text"></div>
+    </div>
+    <div class="obs-box" id="view-client" style="display:none">
+      <strong>Cliente</strong>
+      <div>Nome: <span id="view-client-name"></span></div>
+      <div>Telefone: <span id="view-client-phone"></span></div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="alerts-modal" style="display:none" onclick="if(event.target===this)closeAlertsModal()">
