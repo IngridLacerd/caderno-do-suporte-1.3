@@ -1282,6 +1282,11 @@ textarea:focus {
   flex-shrink: 0;
 }
 
+#note-pin-btn.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
 .note-meta {
   font-size: 11px;
   color: var(--text-3);
