@@ -500,21 +500,23 @@ async function viewProc(id) {
 
   var stepsEl = document.getElementById('view-steps');
   if (stepsEl) {
-    var shtml = '<ol class="view-steps-list">';
+    var shtml = '';
     for (var i = 0; i < p.steps.length; i++) {
       var s = p.steps[i];
-      shtml += '<li><span>' + esc(s.text || s) + '</span>';
+      shtml += '<div class="view-step">'
+        + '<div class="step-num">' + (i + 1) + '</div>'
+        + '<div class="view-step-body">'
+        + '<div class="step-text">' + esc(s.text || s) + '</div>';
       var imgs = s.images || [];
       if (imgs.length) {
-        shtml += '<div class="step-imgs-view">';
+        shtml += '<div class="step-images">';
         for (var j = 0; j < imgs.length; j++) {
-          shtml += '<img src="' + imgs[j] + '" class="step-img-view" onclick="openLightbox(this.src)" alt="imagem ' + (j+1) + '" />';
+          shtml += '<img src="' + imgs[j] + '" onclick="openLightbox(this.src)" alt="imagem ' + (j+1) + '" />';
         }
         shtml += '</div>';
       }
-      shtml += '</li>';
+      shtml += '</div></div>';
     }
-    shtml += '</ol>';
     stepsEl.innerHTML = shtml;
   }
 
