@@ -71,6 +71,7 @@ async function initDB() {
       user_id TEXT,
       title TEXT DEFAULT 'Sem título',
       blocks JSONB DEFAULT '[]',
+      pinned BOOLEAN DEFAULT false,
       updated_at TIMESTAMPTZ DEFAULT NOW(),
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
@@ -85,6 +86,12 @@ async function initDB() {
   // Adicionar coluna email se não existir
   try {
     await pool.query(`ALTER TABLE users ADD COLUMN email TEXT`);
+  } catch (e) {
+    // Coluna já existe, ignorar erro
+  }
+  // Adicionar coluna pinned em notes se não existir
+  try {
+    await pool.query(`ALTER TABLE notes ADD COLUMN pinned BOOLEAN DEFAULT false`);
   } catch (e) {
     // Coluna já existe, ignorar erro
   }
@@ -306,20 +313,20 @@ app.get('/api/notes', async (req, res) => {
 });
 
 app.post('/api/notes', async (req, res) => {
-  const { id, userId, title, blocks } = req.body;
+  const { id, userId, title, blocks, pinned } = req.body;
   const { rows } = await pool.query(
-    `INSERT INTO notes(id,user_id,title,blocks) VALUES($1,$2,$3,$4)
-     ON CONFLICT(id) DO UPDATE SET title=$3,blocks=$4,updated_at=NOW() RETURNING *`,
-    [id, userId||null, title||'Sem título', JSON.stringify(blocks||[])]
+    `INSERT INTO notes(id,user_id,title,blocks,pinned) VALUES($1,$2,$3,$4,$5)
+     ON CONFLICT(id) DO UPDATE SET title=$3,blocks=$4,pinned=$5,updated_at=NOW() RETURNING *`,
+    [id, userId||null, title||'Sem título', JSON.stringify(blocks||[]), pinned||false]
   );
   res.json(formatNote(rows[0]));
 });
 
 app.put('/api/notes/:id', async (req, res) => {
-  const { title, blocks } = req.body;
+  const { title, blocks, pinned } = req.body;
   const { rows } = await pool.query(
-    'UPDATE notes SET title=COALESCE($1,title), blocks=COALESCE($2,blocks), updated_at=NOW() WHERE id=$3 RETURNING *',
-    [title, blocks !== undefined ? JSON.stringify(blocks) : null, req.params.id]
+    'UPDATE notes SET title=COALESCE($1,title), blocks=COALESCE($2,blocks), pinned=COALESCE($3,pinned), updated_at=NOW() WHERE id=$4 RETURNING *',
+    [title, blocks !== undefined ? JSON.stringify(blocks) : null, pinned !== undefined ? pinned : null, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ message: 'Nota não encontrada' });
   res.json(formatNote(rows[0]));
@@ -333,7 +340,7 @@ app.delete('/api/notes/:id', async (req, res) => {
 function formatNote(r) {
   return {
     id: r.id, userId: r.user_id, title: r.title,
-    blocks: r.blocks || [], updatedAt: r.updated_at, createdAt: r.created_at
+    blocks: r.blocks || [], pinned: r.pinned || false, updatedAt: r.updated_at, createdAt: r.created_at
   };
 }
 
