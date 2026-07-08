@@ -287,6 +287,10 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(74,63,181,0.12);
 }
 
+.search-wrap input {
+  padding-left: 34px;
+}
+
 #status-filter {
   flex-shrink: 0;
 }
