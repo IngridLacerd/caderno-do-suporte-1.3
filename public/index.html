@@ -159,7 +159,7 @@
       </div>
       <div class="sidebar-profile-card">
         <div class="sidebar-profile-label">Meu perfil</div>
-        <button class="btn-new btn-small" onclick="openPasswordModal()">Trocar senha</button>
+        <button class="btn-new btn-small" onclick="openEditProfileModal()">Editar perfil</button>
       </div>
     </div>
   </aside>
@@ -185,7 +185,7 @@
         <i class="ti ti-bell"></i>
         <span class="alerts-badge" id="alerts-badge" style="display:none">0</span>
       </button>
-      <button class="btn-new" onclick="openModal()">
+      <button class="btn-new" onclick="openNewModal()">
         <i class="ti ti-plus"></i> Novo
       </button>
     </header>
@@ -205,7 +205,7 @@
               <div class="profile-panel-name" id="profile-panel-name">—</div>
             </div>
           </div>
-          <button class="btn-new btn-small" onclick="openPasswordModal()">Trocar senha</button>
+          <button class="btn-new btn-small" onclick="openEditProfileModal()">Editar perfil</button>
         </div>
         <div class="dashboard-alert-banner" id="dashboard-alert-banner" style="display:none" onclick="openAlertsModal()">
           <i class="ti ti-alert-triangle"></i>
@@ -301,23 +301,43 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="change-password-modal" style="display:none" onclick="if(event.target===this)closePasswordModal()">
-  <div class="modal change-password-modal">
+<div class="modal-overlay" id="edit-profile-modal" style="display:none" onclick="if(event.target===this)closeEditProfileModal()">
+  <div class="modal create-user-modal">
     <div class="modal-header">
-      <h3>Trocar senha</h3>
-      <button class="icon-btn" onclick="closePasswordModal()"><i class="ti ti-x"></i></button>
+      <h3>Editar perfil</h3>
+      <button class="icon-btn" onclick="closeEditProfileModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="form-group">
-      <label>Nova senha</label>
-      <input type="password" id="new-password" placeholder="Digite a nova senha" />
-    </div>
-    <div class="form-group">
-      <label>Confirmar nova senha</label>
-      <input type="password" id="new-password-confirm" placeholder="Repita a nova senha" onkeydown="if(event.key==='Enter')changePassword()" />
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closePasswordModal()">Cancelar</button>
-      <button class="btn-save" onclick="changePassword()">Salvar</button>
+    <div class="create-user-grid">
+      <div class="create-user-side">
+        <div class="create-user-avatar-preview" id="edit-profile-avatar-preview"><i class="ti ti-user-circle"></i></div>
+        <div style="margin-top:10px">Ícone e cor</div>
+        <div class="avatar-pick-row" id="edit-avatar-pick-row">
+          <button class="avatar-pick-btn" data-icon="ti-user-circle" onclick="selectEditAvatar(this)"><i class="ti ti-user-circle"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user" onclick="selectEditAvatar(this)"><i class="ti ti-user"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-star" onclick="selectEditAvatar(this)"><i class="ti ti-user-star"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-bolt" onclick="selectEditAvatar(this)"><i class="ti ti-user-bolt"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-heart" onclick="selectEditAvatar(this)"><i class="ti ti-user-heart"></i></button>
+          <button class="avatar-pick-btn" data-icon="ti-user-shield" onclick="selectEditAvatar(this)"><i class="ti ti-user-shield"></i></button>
+        </div>
+        <div style="margin-top:10px; width:100%;">
+          <label style="display:block;font-size:13px;color:var(--text-2);margin-bottom:6px">Cor do perfil</label>
+          <input type="color" id="edit-user-color-pick" value="#880000" oninput="updateEditProfilePreview()" style="width:100%;height:38px;border-radius:8px;border:1px solid var(--border-md);cursor:pointer;" />
+        </div>
+      </div>
+      <div class="create-user-form">
+        <div class="form-group">
+          <label>Nova senha (deixe em branco para manter a atual)</label>
+          <input type="password" id="edit-new-password" placeholder="Mínimo 6 caracteres" minlength="6" onkeydown="if(event.key==='Enter')saveProfileChanges()" />
+        </div>
+        <div class="form-group">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="edit-new-password-confirm" placeholder="Repita a nova senha" onkeydown="if(event.key==='Enter')saveProfileChanges()" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeEditProfileModal()">Cancelar</button>
+          <button class="btn-save" onclick="saveProfileChanges()">Salvar</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
