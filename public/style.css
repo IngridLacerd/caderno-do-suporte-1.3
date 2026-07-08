@@ -930,6 +930,10 @@ textarea:focus {
   flex-shrink: 0;
 }
 
+.view-actions .icon-btn.active-fav {
+  color: #f5a524;
+}
+
 .view-steps {
   display: flex;
   flex-direction: column;
