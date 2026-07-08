@@ -860,6 +860,10 @@ function closeModal(id) {
   if (modal) modal.style.display = 'none';
 }
 
+function checkOverlayClose(event, id) {
+  if (event.target === event.currentTarget) closeModal(id);
+}
+
 function openLightbox(src) {
   var existing = document.querySelector('.image-lightbox');
   if (existing) existing.remove();
@@ -923,35 +927,58 @@ function loadTheme() {
 
 // ── NOTAS ─────────────────────────────────────────────────────────────────────
 
-function renderNotesView() {
-  var listEl = document.getElementById('notes-list');
-  if (!listEl) return;
-  if (!notes.length) {
-    listEl.innerHTML = '<div class="note-list-empty"><i class="ti ti-notes-off"></i><p>Nenhuma anotação.</p></div>';
-  } else {
-    var html = '';
-    for (var i = 0; i < notes.length; i++) {
-      var n = notes[i];
-      var active = (n.id === currentNoteId);
-      html += '<div class="note-list-item' + (active ? ' active' : '') + '" onclick="selectNote(\'' + n.id + '\')">'
-        + '<div class="note-list-title">' + esc(n.title || 'Sem título') + '</div>'
-        + '<div class="note-list-date">' + formatRelativeTime(new Date(n.updatedAt).getTime()) + '</div>'
-        + '</div>';
-    }
-    listEl.innerHTML = html;
+function notesSorted() {
+  return notes.slice().sort(function(a, b) {
+    if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+    return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+  });
+}
+
+function notePreviewText(n) {
+  var blocks = n.blocks || [];
+  for (var i = 0; i < blocks.length; i++) {
+    if (blocks[i].text) return blocks[i].text;
   }
+  return '';
+}
 
-  var editorWrap = document.getElementById('notes-editor');
-  if (!editorWrap) return;
+function renderNotesSidebar() {
+  var sidebar = document.getElementById('notes-list-sidebar');
+  if (!sidebar) return;
+  var sorted = notesSorted();
+  if (!sorted.length) {
+    sidebar.innerHTML = '<div class="notes-empty-sidebar">Nenhuma anotação ainda.</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < sorted.length; i++) {
+    var n = sorted[i];
+    var active = (n.id === currentNoteId);
+    var preview = notePreviewText(n);
+    html += '<div class="note-list-item' + (active ? ' active' : '') + '" onclick="selectNote(\'' + n.id + '\')">'
+      + '<div class="note-list-title">' + (n.pinned ? '<i class="ti ti-pin-filled pin-icon"></i>' : '') + esc(n.title || 'Sem título') + '</div>'
+      + (preview ? '<div class="note-list-preview">' + esc(preview) + '</div>' : '')
+      + '<div class="note-list-date">' + formatRelativeTime(new Date(n.updatedAt || Date.now()).getTime()) + '</div>'
+      + '</div>';
+  }
+  sidebar.innerHTML = html;
+}
 
-  if (!currentNoteId) {
-    editorWrap.innerHTML = '<div class="note-editor-empty"><i class="ti ti-notes" style="font-size:40px;color:var(--text-3)"></i><p>Selecione ou crie uma anotação.</p></div>';
+function renderNotesView() {
+  renderNotesSidebar();
+
+  var emptyState = document.getElementById('notes-empty-state');
+  var editorWrap  = document.getElementById('notes-editor');
+  var note = notes.find(function(n) { return n.id === currentNoteId; });
+
+  if (!note) {
+    if (emptyState) emptyState.style.display = 'flex';
+    if (editorWrap)  editorWrap.style.display = 'none';
     return;
   }
 
-  var note = notes.find(function(n) { return n.id === currentNoteId; });
-  if (!note) return;
-
+  if (emptyState) emptyState.style.display = 'none';
+  if (editorWrap)  editorWrap.style.display = 'flex';
   renderNoteEditor(note);
 }
 
@@ -960,14 +987,18 @@ function selectNote(id) {
   renderNotesView();
 }
 
-async function newNote() {
+async function createNote() {
   if (!currentUser) { showToast('Faça login para criar anotações.'); return; }
-  var n = { id: 'note_' + Date.now(), userId: currentUser.id, title: 'Nova anotação', blocks: [{ type: 'p', text: '' }] };
+  var n = { id: 'note_' + Date.now(), userId: currentUser.id, title: '', blocks: [{ type: 'p', text: '' }] };
   try {
     var created = await apiFetch('/api/notes', { method: 'POST', body: JSON.stringify(n) });
     notes.unshift(created);
     currentNoteId = created.id;
-    render();
+    renderNotesView();
+    setTimeout(function() {
+      var titleInp = document.getElementById('note-title-input');
+      if (titleInp) titleInp.focus();
+    }, 50);
   } catch(e) { showToast('Erro ao criar anotação.'); }
 }
 
@@ -977,68 +1008,176 @@ async function deleteCurrentNote() {
   try {
     await apiFetch('/api/notes/' + currentNoteId, { method: 'DELETE' });
     notes = notes.filter(function(n) { return n.id !== currentNoteId; });
-    currentNoteId = notes.length ? notes[0].id : null;
-    render();
+    currentNoteId = notes.length ? notesSorted()[0].id : null;
+    renderNotesView();
   } catch(e) { showToast('Erro ao excluir anotação.'); }
 }
 
-// Editor de notas simplificado (mantendo compatibilidade com o original)
+async function toggleNotePin() {
+  var note = notes.find(function(n) { return n.id === currentNoteId; });
+  if (!note) return;
+  note.pinned = !note.pinned;
+  var btn = document.getElementById('note-pin-btn');
+  if (btn) btn.classList.toggle('active', note.pinned);
+  renderNotesSidebar();
+  try {
+    await apiFetch('/api/notes/' + note.id, { method: 'PUT', body: JSON.stringify({ pinned: note.pinned }) });
+  } catch(e) { /* silencioso */ }
+}
+
 var _noteSaveTimer = null;
 
 function renderNoteEditor(note) {
-  var editorWrap = document.getElementById('notes-editor');
-  if (!editorWrap) return;
+  var titleInp = document.getElementById('note-title-input');
+  if (titleInp) titleInp.value = note.title || '';
 
-  var blocks = note.blocks || [{ type: 'p', text: '' }];
-  var html = '<div class="notes-editor-topbar">'
-    + '<input class="note-title-input" id="note-title-input" value="' + esc(note.title || '') + '" placeholder="Título da anotação" oninput="onNoteTitleInput()" />'
-    + '<button class="icon-btn del" onclick="deleteCurrentNote()" title="Excluir anotação"><i class="ti ti-trash"></i></button>'
-    + '</div>'
-    + '<div class="note-blocks" id="note-blocks-container">';
+  var pinBtn = document.getElementById('note-pin-btn');
+  if (pinBtn) pinBtn.classList.toggle('active', !!note.pinned);
 
+  var meta = document.getElementById('note-meta');
+  if (meta) meta.textContent = 'Editado ' + formatRelativeTime(new Date(note.updatedAt || note.createdAt || Date.now()).getTime());
+
+  var container = document.getElementById('note-blocks');
+  if (!container) return;
+
+  var blocks = (note.blocks && note.blocks.length) ? note.blocks : [{ type: 'p', text: '' }];
+  var html = '';
+  var olIndex = 0;
   for (var i = 0; i < blocks.length; i++) {
     var b = blocks[i];
-    var cls = 'block-' + (b.type || 'p');
-    html += '<div class="note-block ' + cls + '" data-idx="' + i + '">'
-      + '<div class="block-input" contenteditable="true" data-type="' + (b.type||'p') + '" oninput="onNoteBlockInput(' + i + ')">' + esc(b.text || '') + '</div>'
+    var type = b.type || 'p';
+    olIndex = (type === 'ol') ? (olIndex + 1) : 0;
+
+    if (type === 'hr') {
+      html += '<div class="note-block block-hr-wrap" data-idx="' + i + '">'
+        + '<hr class="block-hr" />'
+        + '<button class="block-del" onclick="removeNoteBlock(' + i + ')" title="Remover"><i class="ti ti-x"></i></button>'
+        + '</div>';
+      continue;
+    }
+
+    var prefix = '';
+    if (type === 'ul') prefix = '<span class="block-prefix">•</span>';
+    else if (type === 'ol') prefix = '<span class="block-prefix">' + olIndex + '.</span>';
+    else if (type === 'quote') prefix = '<span class="block-prefix"><i class="ti ti-quote"></i></span>';
+
+    var checkboxHtml = '';
+    if (type === 'check') {
+      checkboxHtml = '<input type="checkbox" class="block-check-input" ' + (b.checked ? 'checked' : '') + ' onchange="toggleNoteCheck(' + i + ')" />';
+    }
+
+    var cls = 'note-block block-' + type + (type === 'check' && b.checked ? ' done' : '');
+
+    html += '<div class="' + cls + '" data-idx="' + i + '">'
+      + checkboxHtml
+      + prefix
+      + '<div class="block-input" contenteditable="true" data-idx="' + i + '" oninput="onNoteBlockInput(' + i + ')" onkeydown="onNoteBlockKeydown(event,' + i + ')">' + esc(b.text || '') + '</div>'
+      + '<button class="block-del" onclick="removeNoteBlock(' + i + ')" title="Remover bloco"><i class="ti ti-x"></i></button>'
       + '</div>';
   }
-  html += '<button class="note-add-block-btn" onclick="addNoteBlock()"><i class="ti ti-plus"></i> Adicionar bloco</button>';
-  html += '</div>';
-  editorWrap.innerHTML = html;
+  container.innerHTML = html;
 }
 
-function onNoteTitleInput() {
+function autoSaveNote() {
   var note = notes.find(function(n) { return n.id === currentNoteId; });
   if (!note) return;
-  var inp = document.getElementById('note-title-input');
-  note.title = inp ? inp.value : note.title;
+  var titleInp = document.getElementById('note-title-input');
+  if (titleInp) note.title = titleInp.value;
   scheduleNoteSave();
 }
 
 function onNoteBlockInput(idx) {
   var note = notes.find(function(n) { return n.id === currentNoteId; });
   if (!note) return;
-  var containers = document.querySelectorAll('.block-input');
-  if (containers[idx]) {
+  var el = document.querySelector('.block-input[data-idx="' + idx + '"]');
+  if (el) {
     if (!note.blocks[idx]) note.blocks[idx] = { type: 'p', text: '' };
-    note.blocks[idx].text = containers[idx].innerText || '';
+    note.blocks[idx].text = el.innerText.replace(/\n+$/, '');
   }
   scheduleNoteSave();
 }
 
-function addNoteBlock() {
+function onNoteBlockKeydown(event, idx) {
   var note = notes.find(function(n) { return n.id === currentNoteId; });
   if (!note) return;
-  note.blocks.push({ type: 'p', text: '' });
+  var type = note.blocks[idx] ? (note.blocks[idx].type || 'p') : 'p';
+
+  if (event.key === 'Enter' && !event.shiftKey && type !== 'code' && type !== 'quote') {
+    event.preventDefault();
+    onNoteBlockInput(idx);
+    var newType = (type === 'h1' || type === 'h2' || type === 'h3') ? 'p' : type;
+    var nb = { type: newType, text: '' };
+    if (newType === 'check') nb.checked = false;
+    note.blocks.splice(idx + 1, 0, nb);
+    renderNoteEditor(note);
+    focusBlock(idx + 1);
+    scheduleNoteSave();
+  } else if (event.key === 'Backspace' && event.target.innerText === '' && note.blocks.length > 1 && idx > 0) {
+    event.preventDefault();
+    note.blocks.splice(idx, 1);
+    renderNoteEditor(note);
+    focusBlock(idx - 1, true);
+    scheduleNoteSave();
+  }
+}
+
+function focusBlock(idx, toEnd) {
+  setTimeout(function() {
+    var el = document.querySelector('.block-input[data-idx="' + idx + '"]');
+    if (!el) return;
+    el.focus();
+    if (toEnd) {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, 20);
+}
+
+function toggleNoteCheck(idx) {
+  var note = notes.find(function(n) { return n.id === currentNoteId; });
+  if (!note || !note.blocks[idx]) return;
+  note.blocks[idx].checked = !note.blocks[idx].checked;
   renderNoteEditor(note);
-  var blocks = document.querySelectorAll('.block-input');
-  if (blocks.length) blocks[blocks.length - 1].focus();
+  scheduleNoteSave();
+}
+
+function removeNoteBlock(idx) {
+  var note = notes.find(function(n) { return n.id === currentNoteId; });
+  if (!note) return;
+  if (note.blocks.length <= 1) {
+    note.blocks[0] = { type: 'p', text: '' };
+  } else {
+    note.blocks.splice(idx, 1);
+  }
+  renderNoteEditor(note);
+  scheduleNoteSave();
+}
+
+function insertBlock(type) {
+  var note = notes.find(function(n) { return n.id === currentNoteId; });
+  if (!note) return;
+  note.blocks = note.blocks || [];
+  var last = note.blocks[note.blocks.length - 1];
+  if (last && (last.type || 'p') === 'p' && !last.text && type !== 'hr') {
+    last.type = type;
+    if (type === 'check') last.checked = false;
+  } else {
+    var nb = { type: type, text: '' };
+    if (type === 'check') nb.checked = false;
+    note.blocks.push(nb);
+  }
+  renderNoteEditor(note);
+  if (type !== 'hr') focusBlock(note.blocks.length - 1);
+  scheduleNoteSave();
 }
 
 function scheduleNoteSave() {
   if (_noteSaveTimer) clearTimeout(_noteSaveTimer);
-  _noteSaveTimer = setTimeout(persistCurrentNote, 1200);
+  _noteSaveTimer = setTimeout(persistCurrentNote, 900);
 }
 
 async function persistCurrentNote() {
@@ -1046,10 +1185,10 @@ async function persistCurrentNote() {
   if (!note) return;
   try {
     await apiFetch('/api/notes/' + note.id, { method: 'PUT', body: JSON.stringify({ title: note.title, blocks: note.blocks }) });
-    // atualizar updatedAt local
     note.updatedAt = new Date().toISOString();
-    var listItem = document.querySelector('.note-list-item.active .note-list-title');
-    if (listItem) listItem.textContent = note.title || 'Sem título';
+    var meta = document.getElementById('note-meta');
+    if (meta) meta.textContent = 'Editado agora';
+    renderNotesSidebar();
   } catch(e) { /* silencioso */ }
 }
 
@@ -1112,6 +1251,7 @@ async function loginAs(userId, password) {
 
   currentUser = u;
   saveSession();
+  applyUserTheme(currentUser.color);
   hideLoginScreen();
   await loadNotes();
   updateUserUI();
@@ -1122,6 +1262,7 @@ async function loginAs(userId, password) {
 function logout() {
   currentUser = null;
   saveSession();
+  resetUserTheme();
   notes = [];
   currentNoteId = null;
   showLoginScreen();
@@ -1214,6 +1355,7 @@ async function loginByEmail() {
   if ((u.password || '123456').toString() !== pass.toString()) { showToast('Senha incorreta para ' + u.name + '.'); return; }
   currentUser = u;
   saveSession();
+  applyUserTheme(currentUser.color);
   hideLoginScreen();
   await loadNotes();
   updateUserUI();
@@ -1231,40 +1373,98 @@ async function deleteUser(e, userId) {
   } catch(e) { showToast('Erro ao remover perfil.'); }
 }
 
-function openPasswordModal() {
+function openEditProfileModal() {
   if (!currentUser) return;
-  document.getElementById('new-password').value = '';
-  document.getElementById('new-password-confirm').value = '';
-  document.getElementById('change-password-modal').style.display = 'flex';
-  setTimeout(function() { document.getElementById('new-password').focus(); }, 50);
+  document.getElementById('edit-new-password').value = '';
+  document.getElementById('edit-new-password-confirm').value = '';
+  var colorInp = document.getElementById('edit-user-color-pick');
+  if (colorInp) colorInp.value = currentUser.color || '#880000';
+
+  var avatarBtns = document.querySelectorAll('#edit-avatar-pick-row .avatar-pick-btn');
+  var matched = false;
+  avatarBtns.forEach(function(btn) {
+    var isSel = btn.dataset.icon === currentUser.avatar;
+    btn.classList.toggle('selected', isSel);
+    if (isSel) matched = true;
+  });
+  if (!matched && avatarBtns.length) avatarBtns[0].classList.add('selected');
+
+  updateEditProfilePreview();
+  document.getElementById('edit-profile-modal').style.display = 'flex';
 }
 
-function closePasswordModal() {
-  document.getElementById('change-password-modal').style.display = 'none';
+function closeEditProfileModal() {
+  document.getElementById('edit-profile-modal').style.display = 'none';
 }
 
-async function changePassword() {
+function selectEditAvatar(el) {
+  document.querySelectorAll('#edit-avatar-pick-row .avatar-pick-btn').forEach(function(b) { b.classList.remove('selected'); });
+  el.classList.add('selected');
+  updateEditProfilePreview();
+}
+
+function updateEditProfilePreview() {
+  var preview = document.getElementById('edit-profile-avatar-preview');
+  if (!preview) return;
+  var sel = document.querySelector('#edit-avatar-pick-row .avatar-pick-btn.selected');
+  var icon = sel ? sel.dataset.icon : (currentUser ? currentUser.avatar : 'ti-user-circle');
+  var colorInp = document.getElementById('edit-user-color-pick');
+  var color = colorInp ? colorInp.value : '#880000';
+  preview.innerHTML = '<i class="ti ' + icon + '"></i>';
+  preview.style.background = color;
+  preview.style.color = '#ffffff';
+}
+
+async function saveProfileChanges() {
   if (!currentUser) return;
-  var password        = document.getElementById('new-password') ? document.getElementById('new-password').value : '';
-  var confirmPassword = document.getElementById('new-password-confirm') ? document.getElementById('new-password-confirm').value : '';
-
-  if (!password || !confirmPassword) { showToast('Digite e confirme a nova senha.'); return; }
-  if (password !== confirmPassword)  { showToast('As senhas não conferem.'); return; }
-
-  if (password.length < 6) { showToast('Senha deve ter ao menos 6 caracteres.'); return; }
-
   var user = users.find(function(u) { return u.id === currentUser.id; });
   if (!user) return;
 
-  user.password    = password;
-  currentUser.password = password;
+  var password        = document.getElementById('edit-new-password') ? document.getElementById('edit-new-password').value : '';
+  var confirmPassword = document.getElementById('edit-new-password-confirm') ? document.getElementById('edit-new-password-confirm').value : '';
+  if (password || confirmPassword) {
+    if (password !== confirmPassword) { showToast('As senhas não conferem.'); return; }
+    if (password.length < 6) { showToast('Senha deve ter ao menos 6 caracteres.'); return; }
+  }
+
+  var selBtn = document.querySelector('#edit-avatar-pick-row .avatar-pick-btn.selected');
+  var avatar = selBtn ? selBtn.dataset.icon : user.avatar;
+  var colorInp = document.getElementById('edit-user-color-pick');
+  var color = colorInp ? colorInp.value : user.color;
+
+  var updated = Object.assign({}, user, { avatar: avatar, color: color });
+  if (password) updated.password = password;
 
   try {
-    await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(user) });
+    var saved = await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(updated) });
+    Object.assign(user, saved);
+    Object.assign(currentUser, saved);
     saveSession();
-    closePasswordModal();
-    showToast('Senha alterada com sucesso.');
-  } catch(e) { showToast('Erro ao alterar senha.'); }
+    applyUserTheme(currentUser.color);
+    updateUserUI();
+    renderSidebar();
+    closeEditProfileModal();
+    showToast('Perfil atualizado com sucesso.');
+  } catch(e) {
+    showToast((e && e.message) ? e.message : 'Erro ao salvar perfil.');
+  }
+}
+
+function applyUserTheme(color) {
+  if (!color) return;
+  var root = document.documentElement;
+  root.style.setProperty('--accent', color);
+  root.style.setProperty('--accent-hover', color);
+  root.style.setProperty('--accent-text', color);
+  root.style.setProperty('--accent-bg', 'color-mix(in srgb, ' + color + ' 16%, var(--surface))');
+}
+
+function resetUserTheme() {
+  var root = document.documentElement;
+  root.style.removeProperty('--accent');
+  root.style.removeProperty('--accent-hover');
+  root.style.removeProperty('--accent-text');
+  root.style.removeProperty('--accent-bg');
 }
 
 function updateUserUI() {
@@ -1431,6 +1631,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (!currentUser) {
     showLoginScreen();
   } else {
+    applyUserTheme(currentUser.color);
     hideLoginScreen();
     await loadNotes();
     updateUserUI();
