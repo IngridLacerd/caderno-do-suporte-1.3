@@ -420,8 +420,8 @@ function renderDashboard() {
         var h = recent2[k];
         hhtml += '<div class="mini-item" onclick="viewProc(' + h.procId + ')">'
           + '<i class="ti ti-clock" style="color:var(--text-3)"></i>'
-          + '<span>' + esc(h.title) + '</span>'
-          + '<span class="mini-time">' + formatRelativeTime(h.timestamp) + '</span>'
+          + '<span class="mini-item-title">' + esc(h.title) + '</span>'
+          + '<span class="mini-item-meta">' + formatRelativeTime(h.timestamp) + '</span>'
           + '</div>';
       }
       recentEl.innerHTML = hhtml;
@@ -439,7 +439,7 @@ function renderDashboard() {
         var f = favs[m];
         fhtml += '<div class="mini-item" onclick="viewProc(' + f.id + ')">'
           + '<i class="ti ' + (getCatMeta(f.cat).icon) + '" style="color:var(--text-3)"></i>'
-          + '<span>' + esc(f.title) + '</span>'
+          + '<span class="mini-item-title">' + esc(f.title) + '</span>'
           + '</div>';
       }
       favEl.innerHTML = fhtml;
@@ -461,8 +461,8 @@ function renderHistoryView() {
     var h = accessHistory[i];
     html += '<div class="mini-item history-row" onclick="viewProc(' + h.procId + ')">'
       + '<i class="ti ti-clock" style="color:var(--text-3)"></i>'
-      + '<span>' + esc(h.title) + '</span>'
-      + '<span class="mini-time">' + formatRelativeTime(h.timestamp) + '</span>'
+      + '<span class="mini-item-title">' + esc(h.title) + '</span>'
+      + '<span class="mini-item-meta">' + formatRelativeTime(h.timestamp) + '</span>'
       + '</div>';
   }
   listEl.innerHTML = html;
