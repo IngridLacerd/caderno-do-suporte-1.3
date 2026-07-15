@@ -123,11 +123,6 @@
   }
 
 
-  .login-card {
-    max-width: 420px;
-    padding: 28px 30px;
-  }
-
   .login-user-grid {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   }
@@ -361,12 +356,6 @@
 
   .note-tb-sep {
     flex-shrink: 0;
-  }
-
-  .login-card {
-    padding: 24px 20px;
-    border-radius: var(--radius-lg);
-    margin: 12px;
   }
 
   .login-user-grid {
