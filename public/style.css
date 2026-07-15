@@ -1510,22 +1510,6 @@ textarea:focus {
   border-radius: 1px;
 }
 
-@media (max-width: 720px) {
-  .notes-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .notes-sidebar {
-    border-right: none;
-    border-bottom: 0.5px solid var(--border);
-    max-height: 200px;
-  }
-  #notes-editor {
-    height: calc(100vh - 320px);
-    min-height: 300px;
-  }
-}
-
 /* ── TOGGLE DE TEMA ── */
 
 .theme-toggle-btn {
